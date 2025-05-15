@@ -1,3 +1,4 @@
+using API.DTOs;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Specifications;
@@ -11,43 +12,46 @@ namespace API.Controllers
     public class ProductsController(IGenericRepository<Product> repo) : ControllerBase
     {
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts(string? name, string? sort, int priceMin = 0)
+        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetProducts([FromQuery]SearchProductDTO dto)
         {
-            var spec = new ProductSpecification(name, sort, priceMin);
+            var spec = new ProductSpecification(dto.Name, dto.Sort, dto.PriceMin);
             var products = await repo.ListAsync(spec);
-            return Ok(products);
+            var dtos = products.Select(p => p.ToDTO()).ToList();
+            return Ok(dtos);
         }
 
 
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<ActionResult<ProductDTO>> GetProduct(int id)
         {
             var product = await repo.GetByIdAsync(id);
-
-            return product.Match<ActionResult<Product>>(
+            
+            return product
+            .Map(p => p.ToDTO())
+            .Match<ActionResult<ProductDTO>>(
                 Some: p => Ok(p),
                 None: () => NotFound() 
             );
         }
 
         [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct(Product product)
+        public async Task<ActionResult<Product>> CreateProduct(CreateProductDTO product)
         {
-            repo.Add(product);
+            repo.Add(product.ToProduct());
             await repo.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProduct), new { id = product.ProductID }, product);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateProduct(int id, Product product)
+        public async Task<IActionResult> UpdateProduct(int id, UpdateProductDTO product)
         {
             if (id != product.ProductID || !repo.EntityExists(id))
             {
                 return BadRequest("Cannot update product");
             }
 
-            repo.Update(product);
+            repo.Update(product.ToProduct());
             await repo.SaveChangesAsync();
 
             return NoContent();

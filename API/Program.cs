@@ -10,8 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Infrastructure Services
-builder.Services.AddDbContext<StoreContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("AdvWorksConnectionString")));
+builder.Services.AddDbContext<StoreContext>(opt => {
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("AdvWorksConnectionString"));
+    opt.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    });
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
     
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
