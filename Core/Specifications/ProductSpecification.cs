@@ -1,17 +1,14 @@
-using System.Linq.Expressions;
 using Core.Criterias;
 using Core.Entities;
-using LanguageExt;
 
 namespace Core.Specifications;
 
 public class ProductSpecification : BaseSpecification<Product>
 {
-    public ProductSpecification(string? name, string? sort, int minPrice) 
-        : base(Option<Expression<Func<Product, bool>>>.Some(
-            ProductNameCriteria.CreateNameCriteria(name)
-            .And(ProductPriceCriteria.CreatePriceCriteria(minPrice))
-            .ToExpression()))
+    public ProductSpecification(string? name, string? sort, int minPrice)
+        : base(Criteria<Product>.Build<Decimal>("ListPrice", ">", minPrice, minPrice > 0)
+            .And<string?>("Name", "StartsWith", name, !string.IsNullOrEmpty(name)).ToExpression())
+
     {
         switch (sort)
         {

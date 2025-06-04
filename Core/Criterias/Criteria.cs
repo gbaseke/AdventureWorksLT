@@ -1,40 +1,49 @@
 using System.Linq.Expressions;
+using Core.Common;
 
 namespace Core.Criterias;
 
-public abstract class Criteria<T>
+public class Criteria<T>
 {
-    public static readonly Criteria<T> All = new AllCriteria<T>();
+    private ParameterExpression _parameter;
+    public Expression Value { get; }
 
-    public bool IsSatisfiedBy(T item)
+    private Criteria(Expression value, ParameterExpression parameter) { Value = value; _parameter = parameter; }
+
+    public static Criteria<T> Success => new(Expression.Constant(true), Expression.Parameter(typeof(T)));
+
+    public static Criteria<T> Build<P>(string propertyName, string operatorType, P value)
     {
-        Func<T, bool> predicate = ToExpression().Compile();
-        return predicate(item);
+        var parameter = Expression.Parameter(typeof(T));
+        var expression = ExpressionBuilder.CreateExpression(value, null, propertyName, parameter, operatorType);
+        return new Criteria<T>(expression, parameter);
     }
 
-    public abstract Expression<Func<T, bool>> ToExpression();
-    public Criteria<T> And(Criteria<T> other)
+    public static Criteria<T> Build<P>(string propertyName, string operatorType, P value, bool condition)
     {
-        if (this == All)
-        {
-            return other;
-        }
-        
-        if (other == All)
-        {
+        if (!condition)
+            return Success;
+        var parameter = Expression.Parameter(typeof(T));
+        var expression = ExpressionBuilder.CreateExpression(value, null, propertyName, parameter, operatorType);
+        return new Criteria<T>(expression, parameter);
+    }
+
+    public Criteria<T> And<P>(string propertyName, string operatorType, P? value)
+    {
+        var expression = ExpressionBuilder.CreateExpression(value, Value, propertyName, _parameter, operatorType);
+        return new Criteria<T>(expression, _parameter);
+    }
+
+    public Criteria<T> And<P>(string propertyName, string operatorType, P? value, bool condition)
+    {
+        if (!condition)
             return this;
-        }
-
-        return new AndCriteria<T>(this, other);
+        var expression = ExpressionBuilder.CreateExpression(value, Value, propertyName, _parameter, operatorType);
+        return new Criteria<T>(expression, _parameter);
     }
 
-    public Criteria<T> Or(Criteria<T> other)
+    public Expression<Func<T, bool>> ToExpression()
     {
-        if (this == All || other == All)
-        {
-            return All;
-        }
-
-        return new OrCriteria<T>(this, other);
+        return Expression.Lambda<Func<T, bool>>(Value, _parameter);
     }
 }

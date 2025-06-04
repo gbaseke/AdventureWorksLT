@@ -1,16 +1,13 @@
-using System;
 using System.Linq.Expressions;
 using Core.Interfaces;
 using LanguageExt;
 
 namespace Core.Specifications;
 
-public class BaseSpecification<T>(Option<Expression<Func<T, bool>>> criteria) : ISpecification<T>
+public class BaseSpecification<T>(Expression<Func<T, bool>> criteria) : ISpecification<T>
 {
-    protected BaseSpecification() : this(Option<Expression<Func<T, bool>>>.None)
-    {
-    }
-    public Option<Expression<Func<T, bool>>> Criteria => criteria;
+    protected BaseSpecification() : this(Expression.Lambda<Func<T, bool>>(Expression.Constant(true), Expression.Parameter(typeof(T)))) { }
+    public Expression<Func<T, bool>> Criteria => criteria;
     public Option<Expression<Func<T, object>>> OrderBy { get; private set; }
     public Option<Expression<Func<T, object>>> OrderByDescending { get; private set; }
 

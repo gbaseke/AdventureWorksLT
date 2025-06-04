@@ -1,4 +1,3 @@
-
 using Core.Interfaces;
 
 namespace Infrastructure.Data;
@@ -8,10 +7,7 @@ public class SpecificationEvaluator<T>
 {
     public static IQueryable<T> GetQuery(IQueryable<T> query, ISpecification<T> spec)
     {
-        spec.Criteria.Match(
-            Some: criteria => query = query.Where(criteria),
-            None: () => { }
-        );
+        query = query.Where(spec.Criteria);
 
         spec.OrderBy.Match(
             Some: orderBy => query = query.OrderBy(orderBy),
@@ -21,7 +17,7 @@ public class SpecificationEvaluator<T>
         spec.OrderByDescending.Match(
             Some: orderByDesc => query = query.OrderByDescending(orderByDesc),
             None: () => { }
-        );        
+        );
 
         return query;
     }
