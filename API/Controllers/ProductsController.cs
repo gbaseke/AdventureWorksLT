@@ -1,25 +1,26 @@
 using API.DTOs;
+using API.RequestHelpers;
 using Core.Entities;
 using Core.Interfaces;
 using Core.Specifications;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductsController(IGenericRepository<Product> repo) : ControllerBase
+    public class ProductsController(IGenericRepository<Product> repo) : BaseApiController
     {
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetProducts([FromQuery]SearchProductDTO dto)
+        public async Task<ActionResult<Pagination<ProductDTO>>> GetProducts([FromQuery]ProductSpecParams specParams)
         {
-            var spec = new ProductSpecification(dto.Name, dto.Sort, dto.PriceMin);
-            var products = await repo.ListAsync(spec);
-            var dtos = products.Select(p => p.ToDTO()).ToList();
-            return Ok(dtos);
+            var spec = new ProductSpecification(specParams);
+            return await CreatePagedResult<Product, ProductDTO>(
+                repo, 
+                spec, 
+                p => p.ToDTO(), 
+                specParams.PageIndex, 
+                specParams.PageSize
+            );
         }
-
 
         [HttpGet("{id:int}")]
         public async Task<ActionResult<ProductDTO>> GetProduct(int id)
