@@ -7,7 +7,10 @@ public class SpecificationEvaluator<T>
 {
     public static IQueryable<T> GetQuery(IQueryable<T> query, ISpecification<T> spec)
     {
-        query = query.Where(spec.Criteria);
+        spec.Criteria.Match(
+            Some: criteria => query = query.Where(criteria),
+            None: () => { }
+        );        
 
         spec.OrderBy.Match(
             Some: orderBy => query = query.OrderBy(orderBy),
@@ -18,6 +21,11 @@ public class SpecificationEvaluator<T>
             Some: orderByDesc => query = query.OrderByDescending(orderByDesc),
             None: () => { }
         );
+
+        if (spec.IsPagingEnabled)
+        {
+            query = query.Skip(spec.Skip).Take(spec.Take);
+        }
 
         return query;
     }

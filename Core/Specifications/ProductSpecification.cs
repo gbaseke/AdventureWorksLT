@@ -5,12 +5,16 @@ namespace Core.Specifications;
 
 public class ProductSpecification : BaseSpecification<Product>
 {
-    public ProductSpecification(string? name, string? sort, int minPrice)
-        : base(Criteria<Product>.Build<Decimal>("ListPrice", ">", minPrice, minPrice > 0)
-            .And<string?>("Name", "StartsWith", name, !string.IsNullOrEmpty(name)).ToExpression())
+    public ProductSpecification(ProductSpecParams specParams)
+        : base(
+            Criteria<Product>.Build<Decimal>("ListPrice", ">", specParams.PriceMin, specParams.PriceMin > 0)
+            .And<string?>("Name", "StartsWith", specParams.Name, !string.IsNullOrEmpty(specParams.Name)
+            ).ToExpression())
 
     {
-        switch (sort)
+        ApplyPaging(specParams.PageSize * (specParams.PageIndex - 1), specParams.PageSize);
+
+        switch (specParams.Sort)
         {
             case "priceAsc":
                 AddOrderBy(x => x.ListPrice);
